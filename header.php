@@ -1,5 +1,5 @@
 <?php
-$shop_name = "eMandi";
+$shop_name = "Kissan Konnect";
 //if (session_status() !== PHP_SESSION_ACTIVE) {session_start();}
 if(session_id() == '' || !isset($_SESSION)){session_start();}
 
