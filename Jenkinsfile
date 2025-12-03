@@ -61,6 +61,7 @@ spec:
         REGISTRY_HOST = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
         REGISTRY = "${REGISTRY_HOST}/2401152"
         NAMESPACE = "2401152"
+        DOCKER_HOST = "tcp://localhost:2375"
     }
 
     stages {
