@@ -1,5 +1,5 @@
 <?php
-$shop_name = "Kissan Konnect";
+$shop_name = "Kissan Sathi";
 //if (session_status() !== PHP_SESSION_ACTIVE) {session_start();}
 if(session_id() == '' || !isset($_SESSION)){session_start();}
 

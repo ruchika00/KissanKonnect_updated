@@ -10,7 +10,7 @@ $sql = "DELETE FROM products WHERE id=" .$pid;
 
 $result = $mysqli->query($sql);
 
-if (mysqli_affected_rows($result, $mysqli) > 0){
+if (mysqli_affected_rows( $mysqli) > 0){
     header("location: products.php");
 }else{
     $msg = "Product not available";

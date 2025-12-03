@@ -52,10 +52,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"){
 
           <div class="row">
             <div class="small-4 columns">
-              <label for="right-label" class="right inline">Name</label>
+              <label for="right-label" class="right inline">Product Name</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="Potato" name="name">
+              <input type="text" id="right-label" placeholder="Product Name" name="name">
             </div>
           </div>
           <div class="row">
@@ -71,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"){
               <label for="right-label" class="right inline">Quantity</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="11" name="quantity">
+              <input type="text" id="right-label" placeholder="00" name="quantity">
             </div>
           </div>
             <div class="row">
@@ -79,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"){
               <label for="right-label" class="right inline">Price</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="99" name="price">
+              <input type="text" id="right-label" placeholder="00" name="price">
             </div>
           </div>
             <div class="row">
@@ -95,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"){
 
             </div>
             <div class="small-8 columns">
-              <input type="submit" id="right-label" name="submit" value="Login" style="width: 100%;background: #0078A0; border: none; color: #fff; font-family: 'Helvetica Neue', sans-serif; font-size: 1em; padding: 10px;">
+              <input type="submit" id="right-label" name="submit" value="SAVE" style="width: 100%;background: #0078A0; border: none; color: #fff; font-family: 'Helvetica Neue', sans-serif; font-size: 1em; padding: 10px;">
             </div>
           </div>
         </div>

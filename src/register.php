@@ -13,7 +13,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">First Name</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="X" name="fname">
+              <input type="text" id="right-label" placeholder="" name="fname">
             </div>
           </div>
           <div class="row">
@@ -21,7 +21,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">Last Name</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="Y" name="lname">
+              <input type="text" id="right-label" placeholder="" name="lname">
             </div>
           </div>
           <div class="row">
@@ -29,7 +29,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">Address</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="Aazad Chowk" name="address">
+              <input type="text" id="right-label" placeholder="" name="address">
             </div>
           </div>
           <div class="row">
@@ -37,7 +37,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">City</label>
             </div>
             <div class="small-8 columns">
-              <input type="text" id="right-label" placeholder="Narnaul" name="city">
+              <input type="text" id="right-label" placeholder="" name="city">
             </div>
           </div>
           <div class="row">
@@ -45,7 +45,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">Pin Code</label>
             </div>
             <div class="small-8 columns">
-              <input type="number" id="right-label" placeholder="123001" name="pin">
+              <input type="number" id="right-label" placeholder="" name="pin">
             </div>
           </div>
           <div class="row">
@@ -53,7 +53,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">E-Mail</label>
             </div>
             <div class="small-8 columns">
-              <input type="email" id="right-label" placeholder="unknown@email.com" name="email">
+              <input type="email" id="right-label" placeholder="" name="email">
             </div>
           </div>
           <div class="row">
@@ -61,7 +61,7 @@ if (isset($_SESSION["username"])) {header ("location:index.php");}
               <label for="right-label" class="right inline">Password</label>
             </div>
             <div class="small-8 columns">
-              <input type="password" id="right-label" name="pwd" placeholder="P@ssw0rd">
+              <input type="password" id="right-label" name="pwd" placeholder="">
             </div>
           </div>
           <div class="row">
