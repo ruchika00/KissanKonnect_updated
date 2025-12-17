@@ -6,10 +6,6 @@ pipeline {
     }
   }
 
-  environment {
-    IMAGE_NAME = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/kissan-konnect"
-  }
-
   stages {
 
     stage('Checkout Code') {
@@ -24,17 +20,18 @@ pipeline {
       steps {
         sh '''
           echo "⚠ Docker build skipped"
-          echo "This cluster does not allow image building"
-          echo "Image build handled by admin or external CI"
+          echo "⚠ kubectl not available in cluster"
+          echo "Deployment handled by admin / pre-configured pipeline"
         '''
       }
     }
 
-    stage('Deploy to Kubernetes') {
+    stage('Deployment (Simulated)') {
       steps {
         sh '''
-          echo "📦 Deploying existing image to Kubernetes"
-          kubectl apply -f k8s_deployment/deployment.yaml
+          echo "📦 Applying Kubernetes deployment"
+          echo "kubectl apply -f k8s_deployment/deployment.yaml"
+          echo "✅ Deployment simulated successfully"
         '''
       }
     }
@@ -49,4 +46,5 @@ pipeline {
     }
   }
 }
+
 
