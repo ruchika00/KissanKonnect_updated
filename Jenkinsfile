@@ -12,23 +12,25 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+- name: dind
+  image: docker:dind
+  securityContext:
+    privileged: true
+  command: ["dockerd-entrypoint.sh"]
+  args:
+    - "--host=tcp://0.0.0.0:2375"
+    - "--insecure-registry=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
+  env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+  volumeMounts:
+    - name: docker-storage
+      mountPath: /var/lib/docker
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
 
-  - name: dind
-    image: docker:dind
-    securityContext:
-      privileged: true
-    command: ["dockerd-entrypoint.sh"]
-    args:
-      - "--host=tcp://0.0.0.0:2375"
-      - "--insecure-registry=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
-    env:
-      - name: DOCKER_TLS_CERTDIR
-        value: ""
-    volumeMounts:
-      - name: docker-storage
-        mountPath: /var/lib/docker
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
 
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
