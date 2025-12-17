@@ -57,6 +57,7 @@ spec:
     options { skipDefaultCheckout() }
 
     environment {
+        DOCKER_HOST = "tcp://localhost:2375"
         DOCKER_IMAGE  = "kissan-konnect"
         REGISTRY_HOST = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
         REGISTRY      = "${REGISTRY_HOST}/2401152"
