@@ -1,83 +1,89 @@
 pipeline {
-    agent {
-        kubernetes {
-            label "2401152_4-80psb"
-            defaultContainer 'jnlp'
-        }
+  agent {
+    kubernetes {
+      label '2401152-kaniko-agent'
+      defaultContainer 'jnlp'
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - /busybox/cat
+    tty: true
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker
+
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: nexus-docker-secret
+'''
+    }
+  }
+
+  environment {
+    IMAGE_NAME = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/kissan-konnect"
+  }
+
+  stages {
+
+    stage('Checkout Code') {
+      steps {
+        deleteDir()
+        git url: 'https://github.com/ruchika00/KissanKonnect_updated.git', branch: 'main'
+        echo "✔ Source code cloned successfully"
+      }
     }
 
-    environment {
-        DOCKER_HOST = "tcp://localhost:2375"
-        DOCKER_CLI_EXPERIMENTAL = "enabled"
-        IMAGE_NAME = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/kissan-konnect"
+    stage('Build & Push Image (Kaniko)') {
+      steps {
+        container('kaniko') {
+          sh '''
+            echo "🚀 Building & Pushing image to Nexus..."
+
+            /kaniko/executor \
+              --context $(pwd) \
+              --dockerfile Dockerfile \
+              --destination ${IMAGE_NAME}:${BUILD_NUMBER} \
+              --destination ${IMAGE_NAME}:latest \
+              --insecure \
+              --skip-tls-verify
+          '''
+        }
+      }
     }
 
-    stages {
-
-        stage('Checkout Code') {
-            steps {
-                deleteDir()
-                sh 'git clone https://github.com/ruchika00/KissanKonnect_updated.git .'
-                echo "✔ Source code cloned successfully"
-            }
+    stage('Deploy to Kubernetes') {
+      steps {
+        container('kubectl') {
+          sh '''
+            echo "📦 Deploying application to Kubernetes..."
+            kubectl apply -f k8s_deployment/deployment.yaml
+          '''
         }
-
-        stage('Build Docker Image') {
-            steps {
-                container('dind') {
-                    sh '''
-                        echo "Checking Docker..."
-                        docker info
-                        echo "Building image..."
-                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -t ${IMAGE_NAME}:latest .
-                    '''
-                }
-            }
-        }
-
-        stage('Login to Nexus') {
-            steps {
-                container('dind') {
-                    sh '''
-                        echo "Logging into Nexus..."
-                        docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
-                        -u admin -p admin123
-                    '''
-                }
-            }
-        }
-
-        stage('Push Image') {
-            steps {
-                container('dind') {
-                    sh '''
-                        echo "Pushing image..."
-                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                        docker push ${IMAGE_NAME}:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                container('kubectl') {
-                    sh '''
-                        echo "Deploying to K8s..."
-                        kubectl apply -f k8s_deployment/deployment.yaml
-                    '''
-                }
-            }
-        }
+      }
     }
+  }
 
-    post {
-        always {
-            echo "🔄 Pipeline finished"
-        }
-        failure {
-            echo "❌ Pipeline failed"
-        }
+  post {
+    always {
+      echo "🔄 Pipeline finished"
     }
+    success {
+      echo "✅ Build & Deployment Successful"
+    }
+    failure {
+      echo "❌ Pipeline failed"
+    }
+  }
 }
-
