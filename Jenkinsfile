@@ -145,17 +145,17 @@ spec:
         }
 
         stage('Deploy to Kubernetes') {
-    steps {
-        container('kubectl') {
-            dir('k8s_deployment') {
-                sh '''
-                    kubectl get namespace 2401152 || kubectl create namespace 2401152
-                    kubectl apply -f deployment.yaml -n 2401152
-                '''
+            steps {
+                container('kubectl') {
+                    dir('k8s_deployment') {
+                        sh '''
+                            kubectl get namespace 2401152 || kubectl create namespace 2401152
+                            kubectl apply -f deployment.yaml -n 2401152
+                        '''
+                    }
+                }
             }
         }
-    }
-}
 
 
     post {
