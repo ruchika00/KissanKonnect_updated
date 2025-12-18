@@ -159,17 +159,21 @@ spec:
         }
 
         stage('Deploy to Kubernetes') {
-            steps {
-                container('kubectl') {
-                    dir('k8s_deployment') {
-                        sh """
-                            kubectl apply -f deployment.yaml -n ${NAMESPACE}
-                        """
-                    }
-                }
+    steps {
+        container('kubectl') {
+            dir('k8s_deployment') {
+                sh """
+                    echo "Current directory:"
+                    pwd
+                    echo "Files here:"
+                    ls -l
+                    kubectl apply -f deployment.yaml -n ${NAMESPACE}
+                """
             }
         }
     }
+}
+
 
     post {
         success { echo "🎉 KissanKonnect PHP CI/CD Pipeline completed successfully!" }
