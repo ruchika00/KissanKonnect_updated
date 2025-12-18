@@ -1,6 +1,3 @@
-# =====================================================================
-# PERSISTENT VOLUME CLAIM (UPLOADS / STATIC FILES)
-# =====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -14,9 +11,6 @@ spec:
     requests:
       storage: 1Gi
 ---
-# =====================================================================
-# DEPLOYMENT
-# =====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,71 +28,12 @@ spec:
     spec:
       imagePullSecrets:
         - name: nexus-secret
-
       containers:
         - name: kissankonnect-container
           image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401152/kissankonnect:latest
-          imagePullPolicy: Always
-
           ports:
             - containerPort: 80
-
-          env:
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: DB_HOST
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: DB_USER
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: DB_PASSWORD
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: DB_NAME
-
-          volumeMounts:
-            - name: kissankonnect-storage
-              mountPath: /var/www/html/uploads
-
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
-
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 30
-            periodSeconds: 30
-
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-
-      volumes:
-        - name: kissankonnect-storage
-          persistentVolumeClaim:
-            claimName: kissankonnect-pvc
 ---
-# =====================================================================
-# SERVICE
-# =====================================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -108,31 +43,5 @@ spec:
   selector:
     app: kissankonnect
   ports:
-    - protocol: TCP
-      port: 80
+    - port: 80
       targetPort: 80
-  type: ClusterIP
----
-# =====================================================================
-# INGRESS
-# =====================================================================
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: kissankonnect-ingress
-  namespace: "2401152"
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: kissankonnect.imcc.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: kissankonnect-service
-                port:
-                  number: 80
