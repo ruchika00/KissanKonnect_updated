@@ -157,6 +157,7 @@ spec:
             }
         }
 
+    }   // ✅ CORRECTLY CLOSED stages block
 
     post {
         success { echo "🎉 Pipeline completed successfully" }
