@@ -21,21 +21,19 @@ spec:
 
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
-    command:
-    - cat
+    command: ["cat"]
     tty: true
 
   - name: kubectl
     image: bitnami/kubectl:latest
-    command:
-    - cat
+    command: ["cat"]
     tty: true
     securityContext:
       runAsUser: 0
       readOnlyRootFilesystem: false
     env:
     - name: KUBECONFIG
-      value: /kube/config        
+      value: /kube/config
     volumeMounts:
     - name: kubeconfig-secret
       mountPath: /kube/config
@@ -67,8 +65,7 @@ spec:
         stage('Checkout Code') {
             steps {
                 deleteDir()
-                sh "git clone https://github.com/ruchika00/KissanKonnect.git ."
-                echo "✔ Source code cloned successfully"
+                sh 'git clone https://github.com/ruchika00/KissanKonnect_updated.git .'
             }
         }
 
@@ -81,19 +78,16 @@ spec:
                                 try {
                                     sh 'docker info >/dev/null 2>&1'
                                     return true
-                                } catch (Exception e) {
+                                } catch (e) {
                                     sleep 5
                                     return false
                                 }
                             }
                         }
-
-                        sh """
-                            echo "Building Docker image..."
-                            docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .
-                            docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest
-                            docker image ls
-                        """
+                        sh '''
+                            docker build -t kissankonnect:${BUILD_NUMBER} .
+                            docker tag kissankonnect:${BUILD_NUMBER} kissankonnect:latest
+                        '''
                     }
                 }
             }
@@ -102,13 +96,10 @@ spec:
         stage('Run Tests & Coverage') {
             steps {
                 container('dind') {
-                    sh """
-                        echo "Running PHP lint inside container..."
-                        docker run --rm \
-                          -v \$PWD:/var/www/html \
-                          ${DOCKER_IMAGE}:latest \
-                          sh -c "php -l index.php || true"
-                    """
+                    sh '''
+                        docker run --rm kissankonnect:latest \
+                        sh -c "php -l index.php || true"
+                    '''
                 }
             }
         }
@@ -116,16 +107,15 @@ spec:
         stage('SonarQube Analysis') {
             steps {
                 container('sonar-scanner') {
-                    sh """
+                    sh '''
                         sonar-scanner \
-                          -Dsonar.projectKey=2401152_KissanKonnect \
-                          -Dsonar.projectName=2401152_KissanKonnect \
-                          -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
-                          -Dsonar.token=${SONAR_TOKEN} \
-                          -Dsonar.sources=. \
-                          -Dsonar.language=php \
-                          -Dsonar.sourceEncoding=UTF-8
-                    """
+                        -Dsonar.projectKey=2401152_KissanKonnect \
+                        -Dsonar.projectName=2401152_KissanKonnect \
+                        -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+                        -Dsonar.token=${SONAR_TOKEN} \
+                        -Dsonar.sources=. \
+                        -Dsonar.language=php
+                    '''
                 }
             }
         }
@@ -133,10 +123,10 @@ spec:
         stage('Login to Nexus') {
             steps {
                 container('dind') {
-                    sh """
-                        echo 'Logging into Nexus registry...'
-                        docker login ${REGISTRY_HOST} -u admin -p Changeme@2025
-                    """
+                    sh '''
+                        docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
+                        -u admin -p Changeme@2025
+                    '''
                 }
             }
         }
@@ -144,16 +134,12 @@ spec:
         stage('Push Image') {
             steps {
                 container('dind') {
-                    sh """
-                        docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}
-                        docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${REGISTRY}/${DOCKER_IMAGE}:latest
-
-                        docker push ${REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}
-                        docker push ${REGISTRY}/${DOCKER_IMAGE}:latest
-
-                        docker pull ${REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}
-                        docker image ls
-                    """
+                    sh '''
+                        docker tag kissankonnect:${BUILD_NUMBER} ${REGISTRY}/kissankonnect:${BUILD_NUMBER}
+                        docker tag kissankonnect:${BUILD_NUMBER} ${REGISTRY}/kissankonnect:latest
+                        docker push ${REGISTRY}/kissankonnect:${BUILD_NUMBER}
+                        docker push ${REGISTRY}/kissankonnect:latest
+                    '''
                 }
             }
         }
@@ -162,21 +148,18 @@ spec:
             steps {
                 container('kubectl') {
                     dir('k8s_deployment') {
-                        sh """
-                            echo "Current directory:"
-                            pwd
-                            echo "Files here:"
+                        sh '''
                             ls -l
-                            kubectl apply -f deployment.yaml -n ${NAMESPACE}
-                        """
+                            kubectl apply -f deployment.yaml -n 2401152
+                        '''
                     }
                 }
             }
         }
-
+    }
 
     post {
-        success { echo "🎉 KissanKonnect PHP CI/CD Pipeline completed successfully!" }
+        success { echo "🎉 Pipeline completed successfully" }
         failure { echo "❌ Pipeline failed" }
         always  { echo "🔄 Pipeline finished" }
     }
