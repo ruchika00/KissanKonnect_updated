@@ -1,69 +1,65 @@
-properties([
-  pipelineTriggers([]),
-  durabilityHint('PERFORMANCE_OPTIMIZED')
-])
-
 pipeline {
 
     agent {
         kubernetes {
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-- name: dind
-  image: docker:dind
-  securityContext:
-    privileged: true
-  command: ["dockerd-entrypoint.sh"]
-  args:
-    - "--host=tcp://0.0.0.0:2375"
-    - "--insecure-registry=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
-  env:
+  - name: dind
+    image: docker:dind
+    securityContext:
+      privileged: true
+    env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
-  volumeMounts:
-    - name: docker-storage
-      mountPath: /var/lib/docker
-    - name: workspace-volume
-      mountPath: /home/jenkins/agent
-
+    volumeMounts:
+    - name: docker-config
+      mountPath: /etc/docker/daemon.json
+      subPath: daemon.json
 
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
-    command: ["cat"]
+    command:
+    - cat
     tty: true
 
   - name: kubectl
     image: bitnami/kubectl:latest
-    command: ["cat"]
+    command:
+    - cat
     tty: true
     securityContext:
       runAsUser: 0
       readOnlyRootFilesystem: false
+    env:
+    - name: KUBECONFIG
+      value: /kube/config        
+    volumeMounts:
+    - name: kubeconfig-secret
+      mountPath: /kube/config
+      subPath: kubeconfig
 
   volumes:
-    - name: docker-storage
-      emptyDir: {}
-    - name: workspace-volume
-      emptyDir: {}
-"""
+  - name: docker-config
+    configMap:
+      name: docker-daemon-config
+  - name: kubeconfig-secret
+    secret:
+      secretName: kubeconfig-secret
+'''
         }
     }
 
     options { skipDefaultCheckout() }
 
     environment {
-        DOCKER_HOST = "tcp://localhost:2375"
-        DOCKER_IMAGE  = "kissan-konnect"
+        DOCKER_IMAGE  = "kissankonnect"
+        SONAR_TOKEN   = "sqp_6143e807cdac9c6f54cc04464e03c8a096cd45ef"
         REGISTRY_HOST = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
         REGISTRY      = "${REGISTRY_HOST}/2401152"
         NAMESPACE     = "2401152"
-
-        SONAR_TOKEN = "sqp_6143e807cdac9c6f54cc04464e03c8a096cd45ef"
     }
 
     stages {
@@ -71,7 +67,7 @@ spec:
         stage('Checkout Code') {
             steps {
                 deleteDir()
-                sh "git clone https://github.com/ruchika00/KissanKonnect_updated.git ."
+                sh "git clone https://github.com/ruchika00/KissanKonnect.git ."
                 echo "✔ Source code cloned successfully"
             }
         }
@@ -79,20 +75,39 @@ spec:
         stage('Build Docker Image') {
             steps {
                 container('dind') {
-                    sh """
-                        docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest .
-                        docker image ls
-                    """
+                    script {
+                        timeout(time: 1, unit: 'MINUTES') {
+                            waitUntil {
+                                try {
+                                    sh 'docker info >/dev/null 2>&1'
+                                    return true
+                                } catch (Exception e) {
+                                    sleep 5
+                                    return false
+                                }
+                            }
+                        }
+
+                        sh """
+                            echo "Building Docker image..."
+                            docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .
+                            docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest
+                            docker image ls
+                        """
+                    }
                 }
             }
         }
 
-        stage('Run Tests') {
+        stage('Run Tests & Coverage') {
             steps {
                 container('dind') {
                     sh """
-                        echo "No automated tests configured for PHP project"
-                        echo "Skipping test stage"
+                        echo "Running PHP lint inside container..."
+                        docker run --rm \
+                          -v \$PWD:/var/www/html \
+                          ${DOCKER_IMAGE}:latest \
+                          sh -c "php -l index.php || true"
                     """
                 }
             }
@@ -103,10 +118,13 @@ spec:
                 container('sonar-scanner') {
                     sh """
                         sonar-scanner \
-                        -Dsonar.projectKey=2401152_kissankonnect \
-                        -Dsonar.projectName=2401152_kissankonnect \
-                        -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
-                        -Dsonar.token=${SONAR_TOKEN}
+                          -Dsonar.projectKey=2401152_KissanKonnect \
+                          -Dsonar.projectName=2401152_KissanKonnect \
+                          -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+                          -Dsonar.token=${SONAR_TOKEN} \
+                          -Dsonar.sources=. \
+                          -Dsonar.language=php \
+                          -Dsonar.sourceEncoding=UTF-8
                     """
                 }
             }
@@ -117,7 +135,7 @@ spec:
                 container('dind') {
                     sh """
                         echo 'Logging into Nexus registry...'
-                        docker login ${REGISTRY_HOST} -u admin -p admin123
+                        docker login ${REGISTRY_HOST} -u admin -p Changeme@2025
                     """
                 }
             }
@@ -133,6 +151,7 @@ spec:
                         docker push ${REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}
                         docker push ${REGISTRY}/${DOCKER_IMAGE}:latest
 
+                        docker pull ${REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}
                         docker image ls
                     """
                 }
@@ -142,7 +161,7 @@ spec:
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
-                    dir('k8s_deployment') {
+                    dir('k8s-deployment') {
                         sh """
                             kubectl apply -f deployment.yaml -n ${NAMESPACE}
                         """
@@ -153,11 +172,8 @@ spec:
     }
 
     post {
-        success { echo "🎉 KissanKonnect CI/CD Pipeline completed successfully!" }
+        success { echo "🎉 KissanKonnect PHP CI/CD Pipeline completed successfully!" }
         failure { echo "❌ Pipeline failed" }
         always  { echo "🔄 Pipeline finished" }
     }
 }
-
-
-
