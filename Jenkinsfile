@@ -161,7 +161,7 @@ spec:
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
-                    dir('k8s-deployment') {
+                    dir('k8s_deployment') {
                         sh """
                             kubectl apply -f deployment.yaml -n ${NAMESPACE}
                         """
