@@ -37,7 +37,8 @@ spec:
 
       containers:
         - name: kissankonnect
-          image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401152/kissankonnect:latest
+          # Use IP of Nexus registry instead of DNS to fix ImagePullBackOff
+          image: 192.168.20.250:8085/2401152/kissankonnect:latest
           imagePullPolicy: Always
 
           ports:
