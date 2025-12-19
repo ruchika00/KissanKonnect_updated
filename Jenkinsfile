@@ -14,10 +14,6 @@ spec:
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
-    volumeMounts:
-    - name: docker-config
-      mountPath: /etc/docker/daemon.json
-      subPath: daemon.json
 
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
@@ -28,24 +24,6 @@ spec:
     image: bitnami/kubectl:latest
     command: ["cat"]
     tty: true
-    securityContext:
-      runAsUser: 0
-      readOnlyRootFilesystem: false
-    env:
-    - name: KUBECONFIG
-      value: /kube/config
-    volumeMounts:
-    - name: kubeconfig-secret
-      mountPath: /kube/config
-      subPath: kubeconfig
-
-  volumes:
-  - name: docker-config
-    configMap:
-      name: docker-daemon-config
-  - name: kubeconfig-secret
-    secret:
-      secretName: kubeconfig-secret
 '''
         }
     }
@@ -53,11 +31,11 @@ spec:
     options { skipDefaultCheckout() }
 
     environment {
-        DOCKER_IMAGE  = "kissankonnect"
-        SONAR_TOKEN   = "sqp_6143e807cdac9c6f54cc04464e03c8a096cd45ef"
         REGISTRY_HOST = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
         REGISTRY      = "${REGISTRY_HOST}/2401152"
+        IMAGE_NAME    = "kissankonnect"
         NAMESPACE     = "2401152"
+        SONAR_TOKEN   = "sqp_6143e807cdac9c6f54cc04464e03c8a096cd45ef"
     }
 
     stages {
@@ -72,33 +50,9 @@ spec:
         stage('Build Docker Image') {
             steps {
                 container('dind') {
-                    script {
-                        timeout(time: 1, unit: 'MINUTES') {
-                            waitUntil {
-                                try {
-                                    sh 'docker info >/dev/null 2>&1'
-                                    return true
-                                } catch (e) {
-                                    sleep 5
-                                    return false
-                                }
-                            }
-                        }
-                        sh '''
-                            docker build -t kissankonnect:${BUILD_NUMBER} .
-                            docker tag kissankonnect:${BUILD_NUMBER} kissankonnect:latest
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Run Tests & Coverage') {
-            steps {
-                container('dind') {
                     sh '''
-                        docker run --rm kissankonnect:latest \
-                        sh -c "php -l index.php || true"
+                      docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                      docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${REGISTRY}/${IMAGE_NAME}:latest
                     '''
                 }
             }
@@ -108,13 +62,13 @@ spec:
             steps {
                 container('sonar-scanner') {
                     sh '''
-                        sonar-scanner \
-                        -Dsonar.projectKey=2401152_KissanKonnect \
-                        -Dsonar.projectName=2401152_KissanKonnect \
-                        -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
-                        -Dsonar.token=${SONAR_TOKEN} \
-                        -Dsonar.sources=. \
-                        -Dsonar.language=php
+                      sonar-scanner \
+                      -Dsonar.projectKey=2401152_KissanKonnect \
+                      -Dsonar.projectName=2401152_KissanKonnect \
+                      -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+                      -Dsonar.token=${SONAR_TOKEN} \
+                      -Dsonar.sources=. \
+                      -Dsonar.language=php
                     '''
                 }
             }
@@ -124,8 +78,8 @@ spec:
             steps {
                 container('dind') {
                     sh '''
-                        docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
-                        -u admin -p Changeme@2025
+                      docker login ${REGISTRY_HOST} \
+                      -u admin -p Changeme@2025
                     '''
                 }
             }
@@ -135,10 +89,7 @@ spec:
             steps {
                 container('dind') {
                     sh '''
-                        docker tag kissankonnect:${BUILD_NUMBER} ${REGISTRY}/kissankonnect:${BUILD_NUMBER}
-                        docker tag kissankonnect:${BUILD_NUMBER} ${REGISTRY}/kissankonnect:latest
-                        docker push ${REGISTRY}/kissankonnect:${BUILD_NUMBER}
-                        docker push ${REGISTRY}/kissankonnect:latest
+                      docker push ${REGISTRY}/${IMAGE_NAME}:latest
                     '''
                 }
             }
@@ -147,21 +98,17 @@ spec:
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
-                    dir('k8s_deployment') {
-                        sh '''
-                            kubectl get namespace 2401152 || kubectl create namespace 2401152
-                            kubectl apply -f deployment.yaml -n 2401152
-                        '''
-                    }
+                    sh '''
+                      kubectl get namespace 2401152 || kubectl create namespace 2401152
+                      kubectl apply -f deployment.yaml -n 2401152
+                    '''
                 }
             }
         }
-
-    }   // ✅ CORRECTLY CLOSED stages block
+    }
 
     post {
-        success { echo "🎉 Pipeline completed successfully" }
-        failure { echo "❌ Pipeline failed" }
-        always  { echo "🔄 Pipeline finished" }
+        success { echo "🎉 Deployment Successful" }
+        failure { echo "❌ Deployment Failed" }
     }
 }
