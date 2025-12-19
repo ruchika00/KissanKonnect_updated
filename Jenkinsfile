@@ -7,13 +7,22 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+
   - name: dind
-    image: docker:dind
+    image: docker:24-dind
     securityContext:
       privileged: true
+    command:
+      - dockerd-entrypoint.sh
+    args:
+      - --host=unix:///var/run/docker.sock
+      - --insecure-registry=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run
 
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
@@ -24,6 +33,10 @@ spec:
     image: bitnami/kubectl:latest
     command: ["cat"]
     tty: true
+
+  volumes:
+  - name: docker-sock
+    emptyDir: {}
 '''
         }
     }
@@ -44,6 +57,20 @@ spec:
             steps {
                 deleteDir()
                 sh 'git clone https://github.com/ruchika00/KissanKonnect_updated.git .'
+            }
+        }
+
+        stage('Wait for Docker Daemon') {
+            steps {
+                container('dind') {
+                    sh '''
+                      echo "Waiting for Docker daemon..."
+                      for i in {1..20}; do
+                        docker info && break
+                        sleep 3
+                      done
+                    '''
+                }
             }
         }
 
@@ -108,7 +135,7 @@ spec:
     }
 
     post {
-        success { echo "🎉 Deployment Successful" }
-        failure { echo "❌ Deployment Failed" }
+        success { echo "🎉 Pipeline completed successfully" }
+        failure { echo "❌ Pipeline failed" }
     }
 }
