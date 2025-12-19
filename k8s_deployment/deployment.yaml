@@ -1,5 +1,5 @@
 # =====================================================================
-# PERSISTENT VOLUME CLAIM (UPLOADS / STATIC FILES)
+# PERSISTENT VOLUME CLAIM
 # =====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -36,7 +36,7 @@ spec:
         - name: nexus-secret
 
       containers:
-        - name: kissankonnect-container
+        - name: kissankonnect
           image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401152/kissankonnect:latest
           imagePullPolicy: Always
 
@@ -83,14 +83,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
 
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-
       volumes:
         - name: kissankonnect-storage
           persistentVolumeClaim:
@@ -108,8 +100,7 @@ spec:
   selector:
     app: kissankonnect
   ports:
-    - protocol: TCP
-      port: 80
+    - port: 80
       targetPort: 80
   type: ClusterIP
 ---
