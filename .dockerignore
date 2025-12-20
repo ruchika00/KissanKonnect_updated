@@ -3,3 +3,5 @@ vendor
 node_modules
 .env
 *.log
+Dockerfile
+k8s_deployment
