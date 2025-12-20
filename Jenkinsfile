@@ -11,9 +11,7 @@ spec:
     image: docker:dind
     securityContext:
       privileged: true
-    args:
-      - "--host=tcp://0.0.0.0:2375"
-      - "--insecure-registry=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
+    
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
