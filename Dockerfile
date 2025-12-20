@@ -1,20 +1,26 @@
-FROM php:8.2-apache-alpine
+FROM php:8.2-apache
 
 WORKDIR /var/www/html
 
-RUN apk add --no-cache \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     libpng-dev \
-    libjpeg-turbo-dev \
-    oniguruma-dev \
+    libjpeg-dev \
+    libonig-dev \
     libxml2-dev \
     zip \
     unzip \
-    && docker-php-ext-install mysqli pdo pdo_mysql
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# Enable Apache rewrite module
 RUN a2enmod rewrite
 
+# Copy application files
 COPY . /var/www/html/
 
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
