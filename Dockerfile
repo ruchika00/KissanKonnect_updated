@@ -1,6 +1,10 @@
 FROM php:8.2-apache
 
-WORKDIR /var/www/html
+# Change Apache DocumentRoot to /var/www/html/src
+RUN sed -i 's|/var/www/html|/var/www/html/src|g' \
+    /etc/apache2/sites-available/000-default.conf
+
+WORKDIR /var/www/html/src
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
