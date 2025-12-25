@@ -24,14 +24,16 @@ RUN a2enmod rewrite
 # Copy application files
 COPY . /var/www/html/
 
+# Move public assets under DocumentRoot (safe even if missing)
+RUN for dir in images css js; do \
+        if [ -d "/var/www/html/$dir" ]; then \
+            mv /var/www/html/$dir /var/www/html/src/; \
+        fi; \
+    done
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
-RUN mv /var/www/html/images /var/www/html/src/ && \
-    mv /var/www/html/css /var/www/html/src/ && \
-    mv /var/www/html/js /var/www/html/src/ && \
-    
-
 
 EXPOSE 80
 
