@@ -30,7 +30,7 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN mv /var/www/html/images /var/www/html/src/ && \
     mv /var/www/html/css /var/www/html/src/ && \
     mv /var/www/html/js /var/www/html/src/ && \
-    mv /var/www/html/uploads /var/www/html/src/
+    
 
 
 EXPOSE 80
