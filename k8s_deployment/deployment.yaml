@@ -38,7 +38,8 @@ spec:
       containers:
         - name: kissankonnect
           # Use IP of Nexus registry instead of DNS to fix ImagePullBackOff
-          image: 127.0.0.1:30085/2401152/kissankonnect:latest
+          # image: 127.0.0.1:30085/2401152/kissankonnect:latest
+          image: 192.168.20.250:30085/2401152/kissankonnect:latest
           imagePullPolicy: Always
 
           ports:
@@ -48,22 +49,22 @@ spec:
           - name: DB_HOST
             valueFrom:
               secretKeyRef:
-                name: mysql-app-secret
+                name: mysql-secret
                 key: DB_HOST
           - name: DB_USER
             valueFrom:
               secretKeyRef:
-                name: mysql-app-secret
+                name: mysql-secret
                 key: DB_USER
           - name: DB_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: mysql-app-secret
+                name: mysql-secret
                 key: DB_PASSWORD
           - name: DB_NAME
             valueFrom:
               secretKeyRef:
-                name: mysql-app-secret
+                name: mysql-secret
                 key: DB_NAME
 
           volumeMounts:
